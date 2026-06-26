@@ -1,13 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import '../../../levels/presentation/screens/level_screen.dart';
 import '../../../admin/presentation/screens/add_questions_screen.dart';
-import '../../../leaderboard/presentation/screens/leaderboard_screen.dart';
-import '../../../leaderboard/presentation/bloc/leaderboard_bloc.dart';
-import '../../../live_sessions/presentation/screens/live_sessions_screen.dart';
-import '../../../ai_tutor/presentation/screens/ai_tutor_screen.dart';
-import '../../../../core/utils/app_colors.dart';
-import '../../../../injection.dart';
 import '../../../auth/presentation/bloc/auth_bloc.dart';
 import '../../../auth/presentation/screens/account_settings_dialog.dart';
 import '../../../auth/presentation/screens/privacy_settings_dialog.dart';
@@ -33,91 +26,89 @@ class HomeScreen extends StatelessWidget {
         ],
       ),
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(Icons.menu_book, size: 80, color: Colors.teal),
-              const SizedBox(height: 20),
-              const Text(
-                'تطبيق قواعد اللغة العربية',
-                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 10),
-              const Text(
-                'اختبر معلوماتك في النحو والصرف',
-                style: TextStyle(fontSize: 16, color: Colors.grey),
-              ),
-              const SizedBox(height: 40),
+        child: SingleChildScrollView(
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.menu_book, size: 80, color: Colors.teal),
+                const SizedBox(height: 20),
+                const Text(
+                  'تطبيق قواعد اللغة العربية',
+                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 10),
+                const Text(
+                  'اختبر معلوماتك في النحو والصرف',
+                  style: TextStyle(fontSize: 16, color: Colors.grey),
+                ),
+                const SizedBox(height: 40),
 
-              // ✅ زر "اختبر نفسك" → يفتح LevelScreen
-              _buildGradientButton(
-                context: context,
-                title: 'اختبر نفسك',
-                icon: Icons.quiz,
-                colors: [const Color(0xFF2E7D32), const Color(0xFF1B5E20)],
-                onTap: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const LevelScreen(),
+                _buildGradientButton(
+                  context: context,
+                  title: 'اختبر نفسك',
+                  icon: Icons.quiz,
+                  colors: [const Color(0xFF2E7D32), const Color(0xFF1B5E20)],
+                  onTap: () {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('قريباً!')),
+                    );
+                  },
+                ),
+                const SizedBox(height: 16),
+
+                _buildGradientButton(
+                  context: context,
+                  title: 'إضافة أسئلة',
+                  icon: Icons.add_circle,
+                  colors: [const Color(0xFFFF6B6B), const Color(0xFFEE5A24)],
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const AddQuestionsScreen()),
                   ),
                 ),
-              ),
-              const SizedBox(height: 16),
+                const SizedBox(height: 16),
 
-              _buildGradientButton(
-                context: context,
-                title: 'إضافة أسئلة',
-                icon: Icons.add_circle,
-                colors: [const Color(0xFFFF6B6B), const Color(0xFFEE5A24)],
-                onTap: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const AddQuestionsScreen()),
+                _buildGradientButton(
+                  context: context,
+                  title: 'لوحة المتصدرين',
+                  icon: Icons.emoji_events,
+                  colors: [const Color(0xFFFFD700), const Color(0xFFFF8C00)],
+                  onTap: () {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('قريباً!')),
+                    );
+                  },
                 ),
-              ),
-              const SizedBox(height: 16),
+                const SizedBox(height: 16),
 
-              _buildGradientButton(
-                context: context,
-                title: 'لوحة المتصدرين',
-                icon: Icons.emoji_events,
-                colors: [const Color(0xFFFFD700), const Color(0xFFFF8C00)],
-                onTap: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => BlocProvider(
-                      create: (_) => getIt<LeaderboardBloc>()..add(LoadLeaderboard()),
-                      child: const LeaderboardScreen(),
-                    ),
-                  ),
+                _buildGradientButton(
+                  context: context,
+                  title: 'الدروس',
+                  icon: Icons.school,
+                  colors: [const Color(0xFF2196F3), const Color(0xFF0D47A1)],
+                  onTap: () {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('قريباً!')),
+                    );
+                  },
                 ),
-              ),
-              const SizedBox(height: 16),
+                const SizedBox(height: 16),
 
-              _buildGradientButton(
-                context: context,
-                title: 'الجلسات المباشرة',
-                icon: Icons.live_tv,
-                colors: [const Color(0xFFE94560), const Color(0xFF0F3460)],
-                onTap: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const LiveSessionsScreen()),
+                _buildGradientButton(
+                  context: context,
+                  title: 'أستاذ النحو الذكي',
+                  icon: Icons.smart_toy,
+                  colors: [const Color(0xFF9C27B0), const Color(0xFF673AB7)],
+                  onTap: () {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('قريباً!')),
+                    );
+                  },
                 ),
-              ),
-              const SizedBox(height: 16),
-
-              _buildGradientButton(
-                context: context,
-                title: 'أستاذ النحو الذكي',
-                icon: Icons.smart_toy,
-                colors: [const Color(0xFF9C27B0), const Color(0xFF673AB7)],
-                onTap: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const AiTutorScreen()),
-                ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
@@ -179,7 +170,6 @@ class HomeScreen extends StatelessWidget {
 
             const Divider(color: Colors.white24),
 
-            // ✅✅✅ الحل الصحيح!
             ListTile(
               leading: const Icon(Icons.logout, color: Colors.red),
               title: const Text(
@@ -188,7 +178,6 @@ class HomeScreen extends StatelessWidget {
               ),
               onTap: () {
                 Navigator.pop(context);
-                // ✅ استخدم context.read<AuthBloc>() مع النوع
                 context.read<AuthBloc>().add(SignOutRequested());
               },
             ),

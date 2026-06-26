@@ -1,45 +1,40 @@
 import 'package:get_it/get_it.dart';
-import 'services/firestore_service.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+// Auth
 import 'features/auth/presentation/bloc/auth_bloc.dart';
-import 'features/auth/presentation/usecases/auth_usecases.dart';
-import 'features/quiz/presentation/bloc/quiz_bloc.dart';
-import 'features/levels/presentation/bloc/levels_bloc.dart';
-import 'features/leaderboard/services/leaderboard_service.dart';
-import 'features/leaderboard/presentation/bloc/leaderboard_bloc.dart';
+import 'features/auth/data/repositories/auth_repository_impl.dart';
+import 'features/auth/data/repositories/auth_repository.dart';
+import 'features/auth/domain/usecases/auth_usecases.dart';
 
 final getIt = GetIt.instance;
 
-void setupDependencies() {
-  // ==================== Services ====================
-  getIt.registerLazySingleton(() => FirestoreService());
-  getIt.registerLazySingleton(() => LeaderboardService());
+Future<void> configureDependencies() async {
+  // External
+  final prefs = await SharedPreferences.getInstance();
+  getIt.registerLazySingleton<SharedPreferences>(() => prefs);
+  getIt.registerLazySingleton<FirebaseAuth>(() => FirebaseAuth.instance);
+  getIt.registerLazySingleton<FirebaseFirestore>(() => FirebaseFirestore.instance);
 
-  // ==================== Auth UseCases ====================
-  getIt.registerLazySingleton(() => SignInUseCase());
-  getIt.registerLazySingleton(() => SignUpUseCase());
-  getIt.registerLazySingleton(() => SignOutUseCase());
-  getIt.registerLazySingleton(() => GetCurrentUserUseCase());
+  // Auth
+  getIt.registerLazySingleton<AuthRepository>(
+    () => AuthRepositoryImpl(
+      firebaseAuth: getIt<FirebaseAuth>(),
+      firestore: getIt<FirebaseFirestore>(),
+    ),
+  );
 
-  // ==================== Auth BLoC ====================
+  getIt.registerLazySingleton(() => SignInUseCase(getIt<AuthRepository>()));
+  getIt.registerLazySingleton(() => SignUpUseCase(getIt<AuthRepository>()));
+  getIt.registerLazySingleton(() => SignOutUseCase(getIt<AuthRepository>()));
+  getIt.registerLazySingleton(() => GetCurrentUserUseCase(getIt<AuthRepository>()));
+
   getIt.registerFactory(() => AuthBloc(
     getIt<SignInUseCase>(),
     getIt<SignUpUseCase>(),
     getIt<SignOutUseCase>(),
     getIt<GetCurrentUserUseCase>(),
-  ));
-
-  // ==================== Levels BLoC (جديد!) ====================
-  getIt.registerFactory(() => LevelsBloc(
-    firestoreService: getIt<FirestoreService>(),
-  ));
-
-  // ==================== Quiz BLoC ====================
-  getIt.registerFactory(() => QuizBloc(
-    firestoreService: getIt<FirestoreService>(),
-  ));
-
-  // ==================== Leaderboard BLoC ====================
-  getIt.registerFactory(() => LeaderboardBloc(
-    getIt<LeaderboardService>(),
   ));
 }

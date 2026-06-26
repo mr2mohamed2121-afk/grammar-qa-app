@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';  // ✅ تعديل
-import '../../../levels/domain/entities/lesson_entity.dart';        // ✅ تعديل
+import '../../../levels/domain/entities/lesson_entity.dart';
 import '../../../../core/utils/app_colors.dart';
 
 class LessonDetailScreen extends StatefulWidget {
@@ -79,50 +78,13 @@ class _LessonDetailScreenState extends State<LessonDetailScreen> {
                       ],
                     ),
                     const Divider(height: 32),
-                    MarkdownBody(
-                      data: widget.lesson.content,
-                      styleSheet: MarkdownStyleSheet(
-                        h1: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                              fontWeight: FontWeight.bold,
-                              color: widget.levelColor,
-                            ),
-                        h2: Theme.of(context).textTheme.titleLarge?.copyWith(
-                              fontWeight: FontWeight.bold,
-                            ),
-                        h3: Theme.of(context).textTheme.titleMedium?.copyWith(
-                              fontWeight: FontWeight.bold,
-                              color: Colors.grey[800],
-                            ),
-                        p: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                              height: 1.8,
-                              fontSize: 16,
-                            ),
-                        tableHead: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                        ),
-                        tableBody: Theme.of(context).textTheme.bodyMedium,
-                        tableBorder: TableBorder.all(
-                          color: Colors.grey[300]!,
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        tableCellsPadding: const EdgeInsets.all(12),
-                        tableColumnWidth: const FlexColumnWidth(),
-                        blockquote: TextStyle(  // ✅ تعديل
-                          color: widget.levelColor,
-                          fontStyle: FontStyle.italic,
-                        ),
-                        code: TextStyle(
-                          backgroundColor: Colors.grey[100],
-                          fontFamily: 'monospace',
-                          fontSize: 14,
-                        ),
-                        codeblockDecoration: BoxDecoration(
-                          color: Colors.grey[100],
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        codeblockPadding: const EdgeInsets.all(16),
-                      ),
+                    // ✅ استبدلنا MarkdownBody بـ Text
+                    Text(
+                      widget.lesson.content,
+                      style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                            height: 1.8,
+                            fontSize: 16,
+                          ),
                     ),
                     const SizedBox(height: 32),
                     if (!_isCompleted)
