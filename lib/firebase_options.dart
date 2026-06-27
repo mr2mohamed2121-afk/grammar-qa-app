@@ -16,13 +16,11 @@ class DefaultFirebaseOptions {
         return macos;
       case TargetPlatform.windows:
         throw UnsupportedError(
-          'DefaultFirebaseOptions have not been configured for windows - '
-          'you can reconfigure this by running the FlutterFire CLI again.',
+          'DefaultFirebaseOptions have not been configured for windows',
         );
       case TargetPlatform.linux:
         throw UnsupportedError(
-          'DefaultFirebaseOptions have not been configured for linux - '
-          'you can reconfigure this by running the FlutterFire CLI again.',
+          'DefaultFirebaseOptions have not been configured for linux',
         );
       default:
         throw UnsupportedError(
@@ -31,39 +29,43 @@ class DefaultFirebaseOptions {
     }
   }
 
+  // Web - Real data from Firebase Console
   static const FirebaseOptions web = FirebaseOptions(
-    apiKey: 'AIzaSyAcUAtWs9GqiKgs1QUrm02g4htv2MVP9aA',
-    appId: '1:446485845249:web:95b16c9ee00395e2f6f700',
-    messagingSenderId: '446485845249',
-    projectId: 'grammar-qa-app',
-    authDomain: 'grammar-qa-app.firebaseapp.com',
-    storageBucket: 'grammar-qa-app.firebasestorage.app',
-    measurementId: 'G-W0MDX96PBS',
+    apiKey: 'AIzaSyCTHKCUrJfJxzGkaIn3_KPZDb3LLMqHuiU',
+    appId: '1:360447188575:web:71364c643097f653e905ea',
+    messagingSenderId: '360447188575',
+    projectId: 'arabic-grammar-app-fa40d',
+    authDomain: 'arabic-grammar-app-fa40d.firebaseapp.com',
+    storageBucket: 'arabic-grammar-app-fa40d.firebasestorage.app',
+    measurementId: 'G-8P6CBH7G3W',
   );
 
+  // Android (placeholder until we add Android app)
   static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'YOUR_API_KEY',
-    appId: 'YOUR_APP_ID',
-    messagingSenderId: 'YOUR_MESSAGING_SENDER_ID',
-    projectId: 'YOUR_PROJECT_ID',
-    storageBucket: 'YOUR_STORAGE_BUCKET',
+    apiKey: 'AIzaSyCTHKCUrJfJxzGkaIn3_KPZDb3LLMqHuiU',
+    appId: '1:360447188575:android:placeholder',
+    messagingSenderId: '360447188575',
+    projectId: 'arabic-grammar-app-fa40d',
+    storageBucket: 'arabic-grammar-app-fa40d.firebasestorage.app',
   );
 
+  // iOS (placeholder until we add iOS app)
   static const FirebaseOptions ios = FirebaseOptions(
-    apiKey: 'YOUR_API_KEY',
-    appId: 'YOUR_APP_ID',
-    messagingSenderId: 'YOUR_MESSAGING_SENDER_ID',
-    projectId: 'YOUR_PROJECT_ID',
-    storageBucket: 'YOUR_STORAGE_BUCKET',
-    iosBundleId: 'YOUR_IOS_BUNDLE_ID',
+    apiKey: 'AIzaSyCTHKCUrJfJxzGkaIn3_KPZDb3LLMqHuiU',
+    appId: '1:360447188575:ios:placeholder',
+    messagingSenderId: '360447188575',
+    projectId: 'arabic-grammar-app-fa40d',
+    storageBucket: 'arabic-grammar-app-fa40d.firebasestorage.app',
+    iosBundleId: 'com.yourcompany.arabicGrammarApp',
   );
 
+  // macOS
   static const FirebaseOptions macos = FirebaseOptions(
-    apiKey: 'YOUR_API_KEY',
-    appId: 'YOUR_APP_ID',
-    messagingSenderId: 'YOUR_MESSAGING_SENDER_ID',
-    projectId: 'YOUR_PROJECT_ID',
-    storageBucket: 'YOUR_STORAGE_BUCKET',
-    iosBundleId: 'YOUR_IOS_BUNDLE_ID',
+    apiKey: 'AIzaSyCTHKCUrJfJxzGkaIn3_KPZDb3LLMqHuiU',
+    appId: '1:360447188575:ios:placeholder',
+    messagingSenderId: '360447188575',
+    projectId: 'arabic-grammar-app-fa40d',
+    storageBucket: 'arabic-grammar-app-fa40d.firebasestorage.app',
+    iosBundleId: 'com.yourcompany.arabicGrammarApp',
   );
 }

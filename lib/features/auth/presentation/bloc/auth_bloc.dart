@@ -1,12 +1,8 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:equatable/equatable.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import '../../domain/entities/user_entity.dart';
 import '../../domain/usecases/auth_usecases.dart';
 
-// ==================== EVENTS ====================
-
+// Events
 abstract class AuthEvent extends Equatable {
   const AuthEvent();
   @override
@@ -18,7 +14,7 @@ class AppStarted extends AuthEvent {}
 class SignInRequested extends AuthEvent {
   final String email;
   final String password;
-  const SignInRequested({required this.email, required this.password});
+  const SignInRequested(this.email, this.password);
   @override
   List<Object?> get props => [email, password];
 }
@@ -27,26 +23,16 @@ class SignUpRequested extends AuthEvent {
   final String email;
   final String password;
   final String name;
-  const SignUpRequested({
-    required this.email,
-    required this.password,
-    required this.name,
-  });
+  const SignUpRequested(this.email, this.password, this.name);
   @override
   List<Object?> get props => [email, password, name];
 }
 
 class SignOutRequested extends AuthEvent {}
 
-class PasswordResetRequested extends AuthEvent {
-  final String email;
-  const PasswordResetRequested({required this.email});
-  @override
-  List<Object?> get props => [email];
-}
+class GetCurrentUser extends AuthEvent {}
 
-// ==================== STATES ====================
-
+// States
 abstract class AuthState extends Equatable {
   const AuthState();
   @override
@@ -58,11 +44,20 @@ class AuthInitial extends AuthState {}
 class AuthLoading extends AuthState {}
 
 class AuthAuthenticated extends AuthState {
-  final UserEntity user;
+  final String userId;
+  final String email;
+  final String? name;
   final bool isAdmin;
-  const AuthAuthenticated(this.user, {this.isAdmin = false});
+
+  const AuthAuthenticated({
+    required this.userId,
+    required this.email,
+    this.name,
+    this.isAdmin = false,
+  });
+
   @override
-  List<Object?> get props => [user, isAdmin];
+  List<Object?> get props => [userId, email, name, isAdmin];
 }
 
 class AuthUnauthenticated extends AuthState {}
@@ -74,10 +69,7 @@ class AuthError extends AuthState {
   List<Object?> get props => [message];
 }
 
-class PasswordResetSent extends AuthState {}
-
-// ==================== BLoC ====================
-
+// BLoC
 class AuthBloc extends Bloc<AuthEvent, AuthState> {
   final SignInUseCase _signInUseCase;
   final SignUpUseCase _signUpUseCase;
@@ -94,7 +86,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     on<SignInRequested>(_onSignInRequested);
     on<SignUpRequested>(_onSignUpRequested);
     on<SignOutRequested>(_onSignOutRequested);
-    on<PasswordResetRequested>(_onPasswordResetRequested);
+    on<GetCurrentUser>(_onGetCurrentUser);
   }
 
   Future<void> _onAppStarted(
@@ -103,15 +95,19 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   ) async {
     emit(AuthLoading());
     try {
-      final result = await _getCurrentUserUseCase();
-      if (result != null) {
-        final isAdmin = await _checkAdminStatus(result.id);
-        emit(AuthAuthenticated(result, isAdmin: isAdmin));
+      final user = await _getCurrentUserUseCase();
+      if (user != null) {
+        emit(AuthAuthenticated(
+          userId: user.id,           // ✅ id مش uid
+          email: user.email,
+          name: user.name,
+          isAdmin: user.isAdmin,
+        ));
       } else {
         emit(AuthUnauthenticated());
       }
     } catch (e) {
-      emit(AuthError(e.toString()));
+      emit(AuthUnauthenticated());
     }
   }
 
@@ -121,11 +117,16 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   ) async {
     emit(AuthLoading());
     try {
-      final result = await _signInUseCase(
+      // ✅ نستخدم SignInParams
+      final user = await _signInUseCase(
         SignInParams(email: event.email, password: event.password),
       );
-      final isAdmin = await _checkAdminStatus(result.id);
-      emit(AuthAuthenticated(result, isAdmin: isAdmin));
+      emit(AuthAuthenticated(
+        userId: user.id,            // ✅ id مش uid
+        email: user.email,
+        name: user.name,
+        isAdmin: user.isAdmin,
+      ));
     } catch (e) {
       emit(AuthError(e.toString()));
     }
@@ -137,20 +138,26 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   ) async {
     emit(AuthLoading());
     try {
-      final result = await _signUpUseCase(
+      // ✅ نستخدم SignUpParams
+      final user = await _signUpUseCase(
         SignUpParams(
           email: event.email,
           password: event.password,
           name: event.name,
         ),
       );
-      final isAdmin = await _checkAdminStatus(result.id);
-      emit(AuthAuthenticated(result, isAdmin: isAdmin));
+      emit(AuthAuthenticated(
+        userId: user.id,            // ✅ id مش uid
+        email: user.email,
+        name: user.name,
+        isAdmin: user.isAdmin,
+      ));
     } catch (e) {
       emit(AuthError(e.toString()));
     }
   }
 
+  // ✅ تسجيل الخروج
   Future<void> _onSignOutRequested(
     SignOutRequested event,
     Emitter<AuthState> emit,
@@ -158,34 +165,31 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     emit(AuthLoading());
     try {
       await _signOutUseCase();
-      emit(AuthUnauthenticated());
+      emit(AuthUnauthenticated());    // ✅ لازم يبعت AuthUnauthenticated
     } catch (e) {
       emit(AuthError(e.toString()));
     }
   }
 
-  Future<void> _onPasswordResetRequested(
-    PasswordResetRequested event,
+  Future<void> _onGetCurrentUser(
+    GetCurrentUser event,
     Emitter<AuthState> emit,
   ) async {
     emit(AuthLoading());
     try {
-      await FirebaseAuth.instance.sendPasswordResetEmail(email: event.email);
-      emit(PasswordResetSent());
+      final user = await _getCurrentUserUseCase();
+      if (user != null) {
+        emit(AuthAuthenticated(
+          userId: user.id,           // ✅ id مش uid
+          email: user.email,
+          name: user.name,
+          isAdmin: user.isAdmin,
+        ));
+      } else {
+        emit(AuthUnauthenticated());
+      }
     } catch (e) {
-      emit(AuthError(e.toString()));
-    }
-  }
-
-  Future<bool> _checkAdminStatus(String userId) async {
-    try {
-      final userDoc = await FirebaseFirestore.instance
-          .collection('users')
-          .doc(userId)
-          .get();
-      return userDoc.data()?['isAdmin'] ?? false;
-    } catch (e) {
-      return false;
+      emit(AuthUnauthenticated());
     }
   }
 }
