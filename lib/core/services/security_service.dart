@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:local_auth/local_auth.dart';
 import 'package:local_auth_android/local_auth_android.dart';
-import 'package:local_auth_ios/local_auth_ios.dart';
+import 'package:local_auth_darwin/local_auth_darwin.dart';
 import 'package:firebase_app_check/firebase_app_check.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
@@ -16,7 +16,6 @@ class SecurityService {
 
   // ==================== Firebase App Check ====================
   
-  /// تفعيل Firebase App Check
   Future<void> initializeAppCheck() async {
     if (_isAppCheckInitialized) return;
     
@@ -32,7 +31,6 @@ class SecurityService {
     }
   }
 
-  /// الحصول على App Check token
   Future<String?> getAppCheckToken() async {
     try {
       return await FirebaseAppCheck.instance.getToken();
@@ -44,7 +42,6 @@ class SecurityService {
 
   // ==================== Biometric Authentication ====================
 
-  /// التحقق من دعم الجهاز للبصمة/الوجه
   Future<bool> isDeviceSupported() async {
     try {
       return await _localAuth.isDeviceSupported();
@@ -53,7 +50,6 @@ class SecurityService {
     }
   }
 
-  /// التحقق من وجود بصمات مسجلة
   Future<bool> canCheckBiometrics() async {
     try {
       final availableBiometrics = await _localAuth.getAvailableBiometrics();
@@ -63,7 +59,6 @@ class SecurityService {
     }
   }
 
-  /// الحصول على أنواع البصمات المتاحة
   Future<List<BiometricType>> getAvailableBiometrics() async {
     try {
       return await _localAuth.getAvailableBiometrics();
@@ -72,7 +67,6 @@ class SecurityService {
     }
   }
 
-  /// مصادقة البصمة/الوجه
   Future<bool> authenticateWithBiometrics({
     required String localizedReason,
     bool useErrorDialogs = true,
@@ -101,10 +95,10 @@ class SecurityService {
             lockOut: 'الرجاء إعادة تمكين Face ID',
           ),
         ],
-        options: AuthenticationOptions(
-          useErrorDialogs: useErrorDialogs,
-          stickyAuth: stickyAuth,
-          sensitiveTransaction: sensitiveTransaction,
+        options: const AuthenticationOptions(
+          useErrorDialogs: true,
+          stickyAuth: true,
+          sensitiveTransaction: true,
           biometricOnly: false,
         ),
       );
@@ -115,7 +109,6 @@ class SecurityService {
     }
   }
 
-  /// مصادقة قوية (بصمة فقط بدون PIN)
   Future<bool> authenticateWithBiometricsOnly({
     required String localizedReason,
   }) async {
@@ -135,7 +128,6 @@ class SecurityService {
     }
   }
 
-  /// إلغاء المصادقة
   Future<bool> stopAuthentication() async {
     try {
       return await _localAuth.stopAuthentication();
@@ -146,12 +138,10 @@ class SecurityService {
 
   // ==================== Security Helpers ====================
 
-  /// التحقق من صلاحية الجلسة
   bool isSessionValid() {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return false;
     
-    // التحقق من آخر تسجيل دخول (أقل من 24 ساعة)
     final metadata = user.metadata;
     final lastSignIn = metadata.lastSignInTime;
     if (lastSignIn == null) return false;
@@ -160,13 +150,11 @@ class SecurityService {
     return difference.inHours < 24;
   }
 
-  /// التحقق من إيميل مؤكد
   bool isEmailVerified() {
     final user = FirebaseAuth.instance.currentUser;
     return user?.emailVerified ?? false;
   }
 
-  /// إرسال إيميل التأكيد
   Future<void> sendEmailVerification() async {
     final user = FirebaseAuth.instance.currentUser;
     if (user != null && !user.emailVerified) {
@@ -174,7 +162,6 @@ class SecurityService {
     }
   }
 
-  /// تسجيل الخروج من جميع الأجهزة
   Future<void> revokeAllSessions() async {
     try {
       await FirebaseAuth.instance.signOut();

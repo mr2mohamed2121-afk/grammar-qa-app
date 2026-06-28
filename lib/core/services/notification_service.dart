@@ -19,17 +19,13 @@ class NotificationService {
 
   // ==================== Initialization ====================
 
-  /// تهيئة الإشعارات
   Future<void> initialize() async {
     if (_isInitialized) return;
     
-    // تهيئة المنطقة الزمنية
     tz.initializeTimeZones();
     
-    // إعدادات Android
     const androidSettings = AndroidInitializationSettings('@mipmap/ic_launcher');
     
-    // إعدادات iOS
     const iosSettings = DarwinInitializationSettings(
       requestAlertPermission: true,
       requestBadgePermission: true,
@@ -49,17 +45,13 @@ class NotificationService {
       onDidReceiveNotificationResponse: _onNotificationResponse,
     );
 
-    // إنشاء قنوات الإشعارات
     await _createNotificationChannels();
-
-    // إعداد Firebase Messaging
     await _setupFirebaseMessaging();
 
     _isInitialized = true;
     debugPrint('✅ Notification service initialized');
   }
 
-  /// إنشاء قنوات الإشعارات (Android)
   Future<void> _createNotificationChannels() async {
     if (Platform.isAndroid) {
       const androidChannel = AndroidNotificationChannel(
@@ -110,9 +102,7 @@ class NotificationService {
     }
   }
 
-  /// إعداد Firebase Messaging
   Future<void> _setupFirebaseMessaging() async {
-    // طلب الإذن
     await _firebaseMessaging.requestPermission(
       alert: true,
       badge: true,
@@ -120,30 +110,22 @@ class NotificationService {
       provisional: false,
     );
 
-    // الحصول على token
     final token = await _firebaseMessaging.getToken();
     debugPrint('📱 FCM Token: $token');
 
-    // التعامل مع الإشعارات في الخلفية
     FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
-
-    // التعامل مع الإشعارات في المقدمة
     FirebaseMessaging.onMessage.listen((RemoteMessage message) {
       _handleForegroundMessage(message);
     });
-
-    // عند فتح الإشعار
     FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
       debugPrint('📱 Notification opened: ${message.data}');
     });
   }
 
-  /// معالجة الإشعارات في الخلفية
   static Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
     debugPrint('📱 Background message: ${message.notification?.title}');
   }
 
-  /// معالجة الإشعارات في المقدمة
   void _handleForegroundMessage(RemoteMessage message) {
     final notification = message.notification;
     if (notification != null) {
@@ -156,15 +138,12 @@ class NotificationService {
     }
   }
 
-  /// معالجة الضغط على الإشعار
   void _onNotificationResponse(NotificationResponse response) {
     debugPrint('📱 Notification tapped: ${response.payload}');
-    // يمكن التنقل هنا بناءً على payload
   }
 
   // ==================== Local Notifications ====================
 
-  /// إظهار إشعار محلي
   Future<void> showLocalNotification({
     required int id,
     required String title,
@@ -201,7 +180,6 @@ class NotificationService {
     await _localNotifications.show(id, title, body, details, payload: payload);
   }
 
-  /// جدولة إشعار يومي
   Future<void> scheduleDailyReminder({
     required int id,
     required String title,
@@ -249,7 +227,6 @@ class NotificationService {
     );
   }
 
-  /// جدولة إشعار بعد فترة
   Future<void> scheduleDelayedNotification({
     required int id,
     required String title,
@@ -278,7 +255,7 @@ class NotificationService {
       body,
       tz.TZDateTime.from(scheduledDate, tz.local),
       details,
-      androidScheduleMode: AndroidScheduleMode.allowWhileIdle,
+      androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
       uiLocalNotificationDateInterpretation: UILocalNotificationDateInterpretation.absoluteTime,
       payload: payload,
     );
@@ -286,7 +263,6 @@ class NotificationService {
 
   // ==================== Specific Notifications ====================
 
-  /// إشعار تذكير يومي بالدرس
   Future<void> showDailyLessonReminder() async {
     await scheduleDailyReminder(
       id: 1,
@@ -297,7 +273,6 @@ class NotificationService {
     );
   }
 
-  /// إشعار تذكير بالاختبار
   Future<void> showQuizReminder() async {
     await scheduleDelayedNotification(
       id: 2,
@@ -308,7 +283,6 @@ class NotificationService {
     );
   }
 
-  /// إشعار إنجاز (شهادة)
   Future<void> showAchievementNotification({
     required String title,
     required String body,
@@ -324,7 +298,6 @@ class NotificationService {
     );
   }
 
-  /// إشعار بث مباشر
   Future<void> showLiveStreamNotification({
     required String title,
     required String body,
@@ -340,7 +313,6 @@ class NotificationService {
     );
   }
 
-  /// إشعار ترحيب
   Future<void> showWelcomeNotification(String userName) async {
     await showLocalNotification(
       id: 4,
@@ -352,35 +324,29 @@ class NotificationService {
 
   // ==================== Management ====================
 
-  /// إلغاء إشعار محدد
   Future<void> cancelNotification(int id) async {
     await _localNotifications.cancel(id);
   }
 
-  /// إلغاء كل الإشعارات
   Future<void> cancelAllNotifications() async {
     await _localNotifications.cancelAll();
   }
 
-  /// الحصول على الإشعارات المجدولة
   Future<List<PendingNotificationRequest>> getPendingNotifications() async {
     return await _localNotifications.pendingNotificationRequests();
   }
 
-  /// تحديث FCM token
   Future<void> refreshFcmToken() async {
     await _firebaseMessaging.deleteToken();
     final newToken = await _firebaseMessaging.getToken();
     debugPrint('📱 New FCM Token: $newToken');
   }
 
-  /// الاشتراك في موضوع
   Future<void> subscribeToTopic(String topic) async {
     await _firebaseMessaging.subscribeToTopic(topic);
     debugPrint('📱 Subscribed to topic: $topic');
   }
 
-  /// إلغاء الاشتراك من موضوع
   Future<void> unsubscribeFromTopic(String topic) async {
     await _firebaseMessaging.unsubscribeFromTopic(topic);
     debugPrint('📱 Unsubscribed from topic: $topic');

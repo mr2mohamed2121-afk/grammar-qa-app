@@ -1,6 +1,6 @@
-
 import 'dart:convert';
-import 'dart:io';
+// import 'dart:io'; // ❌ شيل ده
+import 'package:universal_io/io.dart'; // ✅ ضيف ده
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:in_app_purchase/in_app_purchase.dart';
