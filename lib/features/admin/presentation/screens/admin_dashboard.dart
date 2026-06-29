@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../../questions/models/question_model.dart';
 import 'add_questions_screen.dart';
+import 'question_form.dart';
 
 class AdminDashboard extends StatefulWidget {
   const AdminDashboard({super.key});
@@ -35,7 +36,6 @@ class _AdminDashboardState extends State<AdminDashboard> {
       ),
       body: Row(
         children: [
-          // Sidebar
           NavigationRail(
             backgroundColor: const Color(0xFF16213E),
             selectedIndex: _selectedIndex,
@@ -72,8 +72,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
               ),
             ],
           ),
-          
-          // Content
+
           Expanded(
             child: Container(
               color: const Color(0xFF1A1A2E),
@@ -84,10 +83,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
       ),
       floatingActionButton: _selectedIndex == 1
           ? FloatingActionButton(
-              onPressed: () => Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const AddQuestionsScreen()),
-              ),
+              onPressed: () => _addNewQuestion(),
               backgroundColor: const Color(0xFFE94560),
               child: const Icon(Icons.add, color: Colors.white),
             )
@@ -110,7 +106,6 @@ class _AdminDashboardState extends State<AdminDashboard> {
     }
   }
 
-  // ✅ الرئيسية - إحصائيات
   Widget _buildOverview() {
     return Padding(
       padding: const EdgeInsets.all(24),
@@ -170,7 +165,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
       stream: _firestore.collection(collection).snapshots(),
       builder: (context, snapshot) {
         final count = snapshot.data?.docs.length ?? 0;
-        
+
         return Card(
           color: const Color(0xFF16213E),
           elevation: 4,
@@ -207,7 +202,6 @@ class _AdminDashboardState extends State<AdminDashboard> {
     );
   }
 
-  // ✅ الأسئلة
   Widget _buildQuestions() {
     return StreamBuilder<QuerySnapshot>(
       stream: _firestore.collection('questions').orderBy('createdAt', descending: true).snapshots(),
@@ -254,7 +248,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                   itemBuilder: (context, index) {
                     final doc = questions[index];
                     final data = doc.data() as Map<String, dynamic>;
-                    
+
                     return Card(
                       color: const Color(0xFF16213E),
                       margin: const EdgeInsets.only(bottom: 8),
@@ -301,7 +295,6 @@ class _AdminDashboardState extends State<AdminDashboard> {
     );
   }
 
-  // ✅ المستخدمين
   Widget _buildUsers() {
     return StreamBuilder<QuerySnapshot>(
       stream: _firestore.collection('users').snapshots(),
@@ -333,7 +326,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                   itemBuilder: (context, index) {
                     final doc = users[index];
                     final data = doc.data() as Map<String, dynamic>;
-                    
+
                     return Card(
                       color: const Color(0xFF16213E),
                       margin: const EdgeInsets.only(bottom: 8),
@@ -373,7 +366,6 @@ class _AdminDashboardState extends State<AdminDashboard> {
     );
   }
 
-  // ✅ النتائج
   Widget _buildResults() {
     return StreamBuilder<QuerySnapshot>(
       stream: _firestore.collection('quiz_results').orderBy('completedAt', descending: true).snapshots(),
@@ -406,7 +398,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                     final doc = results[index];
                     final data = doc.data() as Map<String, dynamic>;
                     final percentage = (data['score'] ?? 0) / (data['totalQuestions'] ?? 1) * 100;
-                    
+
                     return Card(
                       color: const Color(0xFF16213E),
                       margin: const EdgeInsets.only(bottom: 8),
@@ -452,7 +444,43 @@ class _AdminDashboardState extends State<AdminDashboard> {
     );
   }
 
-  // ✅ حذف سؤال
+  Future<void> _addNewQuestion() async {
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const QuestionForm()),
+    );
+
+    if (result == true && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('✅ تم إضافة السؤال بنجاح'),
+          backgroundColor: Color(0xFF2E7D32),
+        ),
+      );
+    }
+  }
+
+  Future<void> _editQuestion(String id, Map<String, dynamic> data) async {
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => QuestionForm(
+          questionId: id,
+          questionData: data,
+        ),
+      ),
+    );
+
+    if (result == true && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('✅ تم تحديث السؤال بنجاح'),
+          backgroundColor: Color(0xFF2E7D32),
+        ),
+      );
+    }
+  }
+
   Future<void> _deleteQuestion(String id) async {
     final confirm = await showDialog<bool>(
       context: context,
@@ -491,16 +519,5 @@ class _AdminDashboardState extends State<AdminDashboard> {
         );
       }
     }
-  }
-
-  // ✅ تعديل سؤال
-  Future<void> _editQuestion(String id, Map<String, dynamic> data) async {
-    // TODO: Implement edit question
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('⏳ قريباً - تعديل السؤال'),
-        backgroundColor: Color(0xFF1E3A5F),
-      ),
-    );
   }
 }
