@@ -190,7 +190,8 @@ class _SplashScreenState extends State<SplashScreen>
 
   Future<void> _loadCompletionSound() async {
     try {
-      await _audioPlayer.setAsset('assets/audio/success.mp3');
+      // For Flutter Web, use root asset path (Flutter adds "assets/" prefix automatically)
+      await _audioPlayer.setAsset('audio/success.mp3');
       _audioAvailable = true;
     } catch (e) {
       debugPrint('Audio not available: $e');
@@ -412,8 +413,9 @@ class _SplashScreenState extends State<SplashScreen>
   }
 
   Widget _buildLottieOrIcon() {
+    // For Flutter Web, use root asset path (Flutter adds "assets/" prefix automatically)
     return Lottie.asset(
-      'assets/animations/book.json',
+      'animations/book.json',
       width: 100,
       height: 100,
       fit: BoxFit.contain,
