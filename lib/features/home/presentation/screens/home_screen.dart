@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../../quiz/presentation/screens/quiz_screen.dart';
 import '../../../admin/presentation/screens/admin_dashboard.dart';
+import '../../../leaderboard/presentation/screens/leaderboard_screen.dart';
 import 'settings_screen.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -13,19 +15,67 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   bool _isAdmin = false;
+  bool _isLoading = true;
+  String? _userName;
 
   @override
   void initState() {
     super.initState();
     _checkAdmin();
+    _loadUserData();
   }
 
-  void _checkAdmin() {
+  Future<void> _checkAdmin() async {
     final user = FirebaseAuth.instance.currentUser;
     if (user != null) {
-      setState(() {
-        _isAdmin = user.email == 'mr2mohamed2121@gmail.com';
-      });
+      try {
+        // Check Firestore for admin role
+        final doc = await FirebaseFirestore.instance
+            .collection('users')
+            .doc(user.uid)
+            .get();
+
+        if (doc.exists) {
+          final data = doc.data();
+          setState(() {
+            _isAdmin = data?['role'] == 'admin' || 
+                        data?['isAdmin'] == true ||
+                        user.email == 'mr2mohamed2121@gmail.com';
+          });
+        } else {
+          // Fallback to email check
+          setState(() {
+            _isAdmin = user.email == 'mr2mohamed2121@gmail.com';
+          });
+        }
+      } catch (e) {
+        debugPrint('Error checking admin status: $e');
+        setState(() {
+          _isAdmin = user.email == 'mr2mohamed2121@gmail.com';
+        });
+      }
+    }
+    setState(() => _isLoading = false);
+  }
+
+  Future<void> _loadUserData() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      try {
+        final doc = await FirebaseFirestore.instance
+            .collection('users')
+            .doc(user.uid)
+            .get();
+
+        if (doc.exists) {
+          final data = doc.data();
+          setState(() {
+            _userName = data?['name'] ?? user.email;
+          });
+        }
+      } catch (e) {
+        debugPrint('Error loading user data: $e');
+      }
     }
   }
 
@@ -49,6 +99,13 @@ class _HomeScreenState extends State<HomeScreen> {
     Navigator.push(
       context,
       MaterialPageRoute(builder: (context) => const SettingsScreen()),
+    );
+  }
+
+  void _goToLeaderboard() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const LeaderboardScreen()),
     );
   }
 
@@ -86,105 +143,112 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ],
       ),
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            children: [
-              Container(
+      body: _isLoading
+          ? const Center(
+              child: CircularProgressIndicator(
+                valueColor: AlwaysStoppedAnimation(Color(0xFFD4AF37)),
+              ),
+            )
+          : SafeArea(
+              child: SingleChildScrollView(
                 padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [Color(0xFF1E3A5F), Color(0xFF0F3460)],
-                  ),
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(
-                    color: const Color(0xFFD4AF37).withOpacity(0.3),
-                  ),
-                ),
                 child: Column(
                   children: [
-                    const Icon(
-                      Icons.menu_book,
-                      size: 60,
-                      color: Color(0xFFD4AF37),
-                    ),
-                    const SizedBox(height: 12),
-                    const Text(
-                      'أهلاً بك في تطبيق أسئلة النحو العربي',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        fontFamily: 'Cairo',
+                    // Welcome Card
+                    Container(
+                      padding: const EdgeInsets.all(20),
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(
+                          colors: [Color(0xFF1E3A5F), Color(0xFF0F3460)],
+                        ),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: const Color(0xFFD4AF37).withOpacity(0.3),
+                        ),
                       ),
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'اختبر معلوماتك في النحو العربي',
-                      style: TextStyle(
-                        color: Colors.white.withOpacity(0.7),
-                        fontSize: 14,
-                        fontFamily: 'Cairo',
+                      child: Column(
+                        children: [
+                          const Icon(
+                            Icons.menu_book,
+                            size: 60,
+                            color: Color(0xFFD4AF37),
+                          ),
+                          const SizedBox(height: 12),
+                          Text(
+                            'أهلاً ${_userName ?? "بك"} في تطبيق أسئلة النحو العربي',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                              fontFamily: 'Cairo',
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            'اختبر معلوماتك في النحو العربي',
+                            style: TextStyle(
+                              color: Colors.white.withOpacity(0.7),
+                              fontSize: 14,
+                              fontFamily: 'Cairo',
+                            ),
+                          ),
+                        ],
                       ),
+                    ),
+                    const SizedBox(height: 30),
+
+                    _buildMenuButton(
+                      'اختبر نفسك',
+                      Icons.quiz,
+                      const Color(0xFF1A1A2E),
+                      () => _showLevelDialog(),
+                    ),
+                    const SizedBox(height: 16),
+
+                    _buildMenuButton(
+                      'لوحة المتصدرين',
+                      Icons.emoji_events,
+                      Colors.orange.shade700,
+                      _goToLeaderboard,
+                    ),
+                    const SizedBox(height: 16),
+
+                    if (_isAdmin)
+                      _buildMenuButton(
+                        'إضافة أسئلة',
+                        Icons.add_circle,
+                        Colors.red.shade700,
+                        _goToAdmin,
+                      ),
+                    const SizedBox(height: 16),
+
+                    _buildMenuButton(
+                      'الدروس',
+                      Icons.school,
+                      Colors.blue.shade700,
+                      () => _showComingSoon('الدروس'),
+                    ),
+                    const SizedBox(height: 16),
+
+                    _buildMenuButton(
+                      'بث مباشر',
+                      Icons.live_tv,
+                      Colors.purple.shade700,
+                      () => _showComingSoon('البث المباشر'),
+                    ),
+                    const SizedBox(height: 16),
+
+                    _buildMenuButton(
+                      'أستاذ النحو الذكي',
+                      Icons.psychology,
+                      Colors.teal.shade700,
+                      () => _showComingSoon('أستاذ النحو الذكي'),
                     ),
                   ],
                 ),
               ),
-              const SizedBox(height: 30),
-
-              _buildMenuButton(
-                'اختبر نفسك',
-                Icons.quiz,
-                const Color(0xFF1A1A2E),
-                () => _showLevelDialog(),
-              ),
-              const SizedBox(height: 16),
-
-              if (_isAdmin)
-                _buildMenuButton(
-                  'إضافة أسئلة',
-                  Icons.add_circle,
-                  Colors.red.shade700,
-                  _goToAdmin,
-                ),
-              const SizedBox(height: 16),
-
-              _buildMenuButton(
-                'لوحة المتصدرين',
-                Icons.emoji_events,
-                Colors.orange.shade700,
-                () => _showComingSoon('لوحة المتصدرين'),
-              ),
-              const SizedBox(height: 16),
-
-              _buildMenuButton(
-                'الدروس',
-                Icons.school,
-                Colors.blue.shade700,
-                () => _showComingSoon('الدروس'),
-              ),
-              const SizedBox(height: 16),
-
-              _buildMenuButton(
-                'بث مباشر',
-                Icons.live_tv,
-                Colors.purple.shade700,
-                () => _showComingSoon('البث المباشر'),
-              ),
-              const SizedBox(height: 16),
-
-              _buildMenuButton(
-                'أستاذ النحو الذكي',
-                Icons.psychology,
-                Colors.teal.shade700,
-                () => _showComingSoon('أستاذ النحو الذكي'),
-              ),
-            ],
-          ),
-        ),
-      ),
+            ),
     );
   }
 

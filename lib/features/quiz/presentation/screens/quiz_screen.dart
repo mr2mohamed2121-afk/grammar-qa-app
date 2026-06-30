@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'result_screen.dart';
 
 class QuizScreen extends StatefulWidget {
@@ -21,6 +22,64 @@ class _QuizScreenState extends State<QuizScreen> {
   bool _answered = false;
   int? _selectedAnswer;
   bool _quizFinished = false;
+  bool _isLoading = true;
+  List<Map<String, dynamic>> _questions = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadQuestions();
+  }
+
+  Future<void> _loadQuestions() async {
+    try {
+      // Try to load from Firestore first
+      final snapshot = await FirebaseFirestore.instance
+          .collection('questions')
+          .where('level', isEqualTo: widget.level)
+          .where('isActive', isEqualTo: true)
+          .limit(15)
+          .get();
+
+      if (snapshot.docs.isNotEmpty) {
+        setState(() {
+          _questions = snapshot.docs.map((doc) {
+            final data = doc.data();
+            return {
+              'question': data['question'] ?? '',
+              'answers': List<String>.from(data['options'] ?? []),
+              'correct': data['correctAnswerIndex'] ?? 0,
+              'explanation': data['explanation'] ?? '',
+            };
+          }).toList();
+          _isLoading = false;
+        });
+      } else {
+        // Fallback to hardcoded questions
+        _loadHardcodedQuestions();
+      }
+    } catch (e) {
+      debugPrint('Error loading questions from Firestore: $e');
+      _loadHardcodedQuestions();
+    }
+  }
+
+  void _loadHardcodedQuestions() {
+    switch (widget.level) {
+      case 'ابتدائي':
+        _questions = _primaryQuestions;
+        break;
+      case 'إعدادي':
+        _questions = _prepQuestions;
+        break;
+      case 'ثانوي':
+        _questions = _secondaryQuestions;
+        break;
+      default:
+        _questions = _primaryQuestions;
+    }
+    setState(() => _isLoading = false);
+  }
 
   // ✅ أسئلة الابتدائي - 15 سؤال
   final List<Map<String, dynamic>> _primaryQuestions = [
@@ -210,7 +269,7 @@ class _QuizScreenState extends State<QuizScreen> {
     },
   ];
 
-  // ✅ أسئلة الثانوي - 15 سؤال
+  // ✅ أسئلة الثانوي - 15 سؤال (مصححة)
   final List<Map<String, dynamic>> _secondaryQuestions = [
     {
       'question': 'كان وأخواتها تُسمى:',
@@ -304,19 +363,6 @@ class _QuizScreenState extends State<QuizScreen> {
     },
   ];
 
-  List<Map<String, dynamic>> get _questions {
-    switch (widget.level) {
-      case 'ابتدائي':
-        return _primaryQuestions;
-      case 'إعدادي':
-        return _prepQuestions;
-      case 'ثانوي':
-        return _secondaryQuestions;
-      default:
-        return _primaryQuestions;
-    }
-  }
-
   void _checkAnswer(int index) {
     if (_answered || _quizFinished) return;
 
@@ -343,18 +389,26 @@ class _QuizScreenState extends State<QuizScreen> {
 
   void _finishQuiz() {
     if (_quizFinished) return;
+
     setState(() => _quizFinished = true);
 
+    // Build user answers for all questions
     final userAnswers = _questions.asMap().entries.map((entry) {
       final index = entry.key;
       final q = entry.value;
       final correctIndex = q['correct'] as int;
-      // لو السؤال الحالي مش متجاوب عليه، نستخدم الـ _selectedAnswer للسؤال الحالي
-      // للأسئلة اللي فاتت، نفترض إنها غلط (لأن مفيش طريقة نعرف الإجابة)
+
+      // For current question, use _selectedAnswer if answered
+      // For previous questions, they were already answered
       int? userAns;
-      if (index == _currentQuestion) {
+      if (index < _currentQuestion) {
+        // Previous questions - we don't track individual answers
+        // Mark as unanswered for now
+        userAns = null;
+      } else if (index == _currentQuestion) {
         userAns = _selectedAnswer;
       }
+
       return {
         'question': q['question'],
         'userAnswer': userAns != null ? q['answers'][userAns] : 'لم يتم الإجابة',
@@ -379,7 +433,10 @@ class _QuizScreenState extends State<QuizScreen> {
   }
 
   Future<bool> _onWillPop() async {
-    if (_quizFinished) return true;
+    if (_quizFinished) {
+      Navigator.popUntil(context, (route) => route.isFirst);
+      return false;
+    }
 
     final result = await showDialog<bool>(
       context: context,
@@ -416,6 +473,40 @@ class _QuizScreenState extends State<QuizScreen> {
 
   @override
   Widget build(BuildContext context) {
+    if (_isLoading) {
+      return Scaffold(
+        backgroundColor: const Color(0xFF1A1A2E),
+        body: const Center(
+          child: CircularProgressIndicator(
+            valueColor: AlwaysStoppedAnimation(Color(0xFFD4AF37)),
+          ),
+        ),
+      );
+    }
+
+    if (_questions.isEmpty) {
+      return Scaffold(
+        backgroundColor: const Color(0xFF1A1A2E),
+        appBar: AppBar(
+          backgroundColor: const Color(0xFF0D0D0D),
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back, color: Color(0xFFD4AF37)),
+            onPressed: () => Navigator.pop(context),
+          ),
+          title: const Text(
+            'خطأ',
+            style: TextStyle(color: Colors.white, fontFamily: 'Cairo'),
+          ),
+        ),
+        body: const Center(
+          child: Text(
+            'لا توجد أسئلة متاحة',
+            style: TextStyle(color: Colors.white, fontFamily: 'Cairo'),
+          ),
+        ),
+      );
+    }
+
     final question = _questions[_currentQuestion];
 
     return WillPopScope(
@@ -438,7 +529,7 @@ class _QuizScreenState extends State<QuizScreen> {
           ),
           actions: [
             TextButton(
-              onPressed: _finishQuiz,
+              onPressed: _quizFinished ? null : _finishQuiz,
               child: const Text(
                 'إنهاء',
                 style: TextStyle(
@@ -457,7 +548,7 @@ class _QuizScreenState extends State<QuizScreen> {
               LinearProgressIndicator(
                 value: (_currentQuestion + 1) / _questions.length,
                 backgroundColor: Colors.grey[800],
-                valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFFD4AF37)),
+                valueColor: const AlwaysStoppedAnimation(Color(0xFFD4AF37)),
                 minHeight: 8,
               ),
               const SizedBox(height: 10),

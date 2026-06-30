@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -10,11 +10,11 @@ class SettingsScreen extends StatefulWidget {
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
+  bool _isLoading = true;
   bool _notifications = true;
   bool _sound = true;
   bool _darkMode = true;
   String _selectedLanguage = 'ar';
-  bool _isLoading = true;
   User? _user;
 
   @override
@@ -60,7 +60,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
-        content: Text('Settings saved successfully'),
+        content: Text('تم حفظ الإعدادات بنجاح'),
         backgroundColor: Color(0xFF2E7D32),
       ),
     );
@@ -68,24 +68,55 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   Future<void> _changePassword() async {
     final email = _user?.email;
-    if (email != null) {
+    if (email != null && email.isNotEmpty) {
       try {
         await FirebaseAuth.instance.sendPasswordResetEmail(email: email);
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Password reset email sent! Check your inbox and spam folder.'),
-            backgroundColor: Color(0xFF2E7D32),
-            duration: Duration(seconds: 5),
-          ),
-        );
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('تم إرسال رابط إعادة تعيين كلمة المرور! تحقق من صندوق الوارد والرسائل غير المرغوبة.'),
+              backgroundColor: Color(0xFF2E7D32),
+              duration: Duration(seconds: 5),
+            ),
+          );
+        }
+      } on FirebaseAuthException catch (e) {
+        String errorMessage = 'حدث خطأ';
+        switch (e.code) {
+          case 'invalid-email':
+            errorMessage = 'البريد الإلكتروني غير صالح';
+            break;
+          case 'user-not-found':
+            errorMessage = 'لم يتم العثور على مستخدم بهذا البريد';
+            break;
+          default:
+            errorMessage = 'خطأ: ${e.message}';
+        }
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(errorMessage),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
       } catch (e) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('خطأ غير متوقع: $e'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
       }
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('لا يوجد بريد إلكتروني مرتبط بهذا الحساب'),
+          backgroundColor: Colors.red,
+        ),
+      );
     }
   }
 
@@ -95,22 +126,22 @@ class _SettingsScreenState extends State<SettingsScreen> {
       builder: (context) => AlertDialog(
         backgroundColor: const Color(0xFF16213E),
         title: const Text(
-          'Delete Account?',
+          'حذف الحساب؟',
           style: TextStyle(color: Colors.white, fontFamily: 'Cairo'),
         ),
         content: const Text(
-          'This action cannot be undone. All your data will be lost.',
+          'لا يمكن التراجع عن هذا الإجراء. سيتم فقدان جميع بياناتك.',
           style: TextStyle(color: Colors.white70, fontFamily: 'Cairo'),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel', style: TextStyle(color: Colors.white70)),
+            child: const Text('إلغاء', style: TextStyle(color: Colors.white70)),
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(context, true),
             style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-            child: const Text('Delete', style: TextStyle(color: Colors.white)),
+            child: const Text('حذف', style: TextStyle(color: Colors.white)),
           ),
         ],
       ),
@@ -122,13 +153,28 @@ class _SettingsScreenState extends State<SettingsScreen> {
         if (mounted) {
           Navigator.of(context).pushNamedAndRemoveUntil('/', (route) => false);
         }
+      } on FirebaseAuthException catch (e) {
+        String errorMessage = 'حدث خطأ أثناء حذف الحساب';
+        if (e.code == 'requires-recent-login') {
+          errorMessage = 'يجب إعادة تسجيل الدخول قبل حذف الحساب';
+        }
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(errorMessage),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
       } catch (e) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('خطأ: $e'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
       }
     }
   }
@@ -139,7 +185,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       backgroundColor: const Color(0xFF1A1A2E),
       appBar: AppBar(
         title: const Text(
-          'Settings',
+          'الإعدادات',
           style: TextStyle(
             color: Colors.white,
             fontFamily: 'Cairo',
@@ -193,7 +239,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                _user?.email ?? 'User',
+                                _user?.email ?? 'مستخدم',
                                 style: const TextStyle(
                                   color: Colors.white,
                                   fontSize: 16,
@@ -203,7 +249,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                               ),
                               const SizedBox(height: 4),
                               Text(
-                                'Member since ${_user?.metadata.creationTime?.year ?? ''}',
+                                'عضو منذ ${_user?.metadata.creationTime?.year ?? ''}',
                                 style: TextStyle(
                                   color: Colors.white.withOpacity(0.7),
                                   fontSize: 12,
@@ -218,24 +264,24 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   const SizedBox(height: 30),
 
                   // General Settings
-                  _buildSectionTitle('General'),
+                  _buildSectionTitle('عام'),
                   _buildSwitchTile(
-                    'Notifications',
-                    'Receive quiz reminders and updates',
+                    'الإشعارات',
+                    'تلقي تذكيرات الاختبار والتحديثات',
                     Icons.notifications,
                     _notifications,
                     (value) => setState(() => _notifications = value),
                   ),
                   _buildSwitchTile(
-                    'Sound Effects',
-                    'Play sounds during quiz',
+                    'المؤثرات الصوتية',
+                    'تشغيل الأصوات أثناء الاختبار',
                     Icons.volume_up,
                     _sound,
                     (value) => setState(() => _sound = value),
                   ),
                   _buildSwitchTile(
-                    'Dark Mode',
-                    'Use dark theme',
+                    'الوضع الداكن',
+                    'استخدام السمة الداكنة',
                     Icons.dark_mode,
                     _darkMode,
                     (value) => setState(() => _darkMode = value),
@@ -243,21 +289,21 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   const SizedBox(height: 20),
 
                   // Language
-                  _buildSectionTitle('Language'),
+                  _buildSectionTitle('اللغة'),
                   _buildLanguageSelector(),
                   const SizedBox(height: 20),
 
                   // Account
-                  _buildSectionTitle('Account'),
+                  _buildSectionTitle('الحساب'),
                   _buildActionTile(
-                    'Change Password',
-                    'Send reset email to your inbox',
+                    'تغيير كلمة المرور',
+                    'إرسال رابط إعادة التعيين إلى بريدك',
                     Icons.lock,
                     _changePassword,
                   ),
                   _buildActionTile(
-                    'Delete Account',
-                    'Permanently delete your account',
+                    'حذف الحساب',
+                    'حذف حسابك نهائياً',
                     Icons.delete_forever,
                     _deleteAccount,
                     color: Colors.red,
@@ -271,7 +317,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       onPressed: _saveSettings,
                       icon: const Icon(Icons.save),
                       label: const Text(
-                        'Save Settings',
+                        'حفظ الإعدادات',
                         style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
@@ -369,7 +415,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       ),
       child: Column(
         children: [
-          _buildLanguageOption('Arabic', 'ar', 'العربية'),
+          _buildLanguageOption('العربية', 'ar', 'العربية'),
           const Divider(color: Colors.white24),
           _buildLanguageOption('English', 'en', 'English'),
         ],
