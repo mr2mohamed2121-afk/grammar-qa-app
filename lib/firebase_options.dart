@@ -2,6 +2,16 @@ import 'package:firebase_core/firebase_core.dart' show FirebaseOptions;
 import 'package:flutter/foundation.dart'
     show defaultTargetPlatform, kIsWeb, TargetPlatform;
 
+/// Default [FirebaseOptions] for use with your Firebase apps.
+///
+/// Example:
+/// ```dart
+/// import 'firebase_options.dart';
+/// // ...
+/// await Firebase.initializeApp(
+///   options: DefaultFirebaseOptions.currentPlatform,
+/// );
+/// ```
 class DefaultFirebaseOptions {
   static FirebaseOptions get currentPlatform {
     if (kIsWeb) {
@@ -16,11 +26,13 @@ class DefaultFirebaseOptions {
         return macos;
       case TargetPlatform.windows:
         throw UnsupportedError(
-          'DefaultFirebaseOptions have not been configured for windows',
+          'DefaultFirebaseOptions have not been configured for windows - '
+          'you can reconfigure this by running the FlutterFire CLI again.',
         );
       case TargetPlatform.linux:
         throw UnsupportedError(
-          'DefaultFirebaseOptions have not been configured for linux',
+          'DefaultFirebaseOptions have not been configured for linux - '
+          'you can reconfigure this by running the FlutterFire CLI again.',
         );
       default:
         throw UnsupportedError(
@@ -29,9 +41,9 @@ class DefaultFirebaseOptions {
     }
   }
 
-  // Web - Real data from Firebase Console
+  // ✅ Web configuration - CORRECT API KEY
   static const FirebaseOptions web = FirebaseOptions(
-    apiKey: 'AIzaSyCTHKCUrJfJxzGkaIn3_KPZDb3LLMqHuiU',
+    apiKey: 'AIzaSyCTHKCUrJfJxzGkaln3_KPfZb3lLMqHuiU',
     appId: '1:360447188575:web:71364c643097f653e905ea',
     messagingSenderId: '360447188575',
     projectId: 'arabic-grammar-app-fa40d',
@@ -40,32 +52,32 @@ class DefaultFirebaseOptions {
     measurementId: 'G-8P6CBH7G3W',
   );
 
-  // Android (placeholder until we add Android app)
+  // Android configuration (keep your existing values)
   static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'AIzaSyCTHKCUrJfJxzGkaIn3_KPZDb3LLMqHuiU',
-    appId: '1:360447188575:android:placeholder',
+    apiKey: 'AIzaSyCTHKCUrJfJxzGkaln3_KPfZb3lLMqHuiU',
+    appId: '1:360447188575:android:YOUR_ANDROID_APP_ID',
     messagingSenderId: '360447188575',
     projectId: 'arabic-grammar-app-fa40d',
     storageBucket: 'arabic-grammar-app-fa40d.firebasestorage.app',
   );
 
-  // iOS (placeholder until we add iOS app)
+  // iOS configuration (keep your existing values)
   static const FirebaseOptions ios = FirebaseOptions(
-    apiKey: 'AIzaSyCTHKCUrJfJxzGkaIn3_KPZDb3LLMqHuiU',
-    appId: '1:360447188575:ios:placeholder',
+    apiKey: 'AIzaSyCTHKCUrJfJxzGkaln3_KPfZb3lLMqHuiU',
+    appId: '1:360447188575:ios:YOUR_IOS_APP_ID',
     messagingSenderId: '360447188575',
     projectId: 'arabic-grammar-app-fa40d',
     storageBucket: 'arabic-grammar-app-fa40d.firebasestorage.app',
-    iosBundleId: 'com.yourcompany.arabicGrammarApp',
+    iosBundleId: 'com.example.arabicGrammarApp',
   );
 
-  // macOS
+  // macOS configuration (same as iOS)
   static const FirebaseOptions macos = FirebaseOptions(
-    apiKey: 'AIzaSyCTHKCUrJfJxzGkaIn3_KPZDb3LLMqHuiU',
-    appId: '1:360447188575:ios:placeholder',
+    apiKey: 'AIzaSyCTHKCUrJfJxzGkaln3_KPfZb3lLMqHuiU',
+    appId: '1:360447188575:ios:YOUR_MACOS_APP_ID',
     messagingSenderId: '360447188575',
     projectId: 'arabic-grammar-app-fa40d',
     storageBucket: 'arabic-grammar-app-fa40d.firebasestorage.app',
-    iosBundleId: 'com.yourcompany.arabicGrammarApp',
+    iosBundleId: 'com.example.arabicGrammarApp',
   );
 }
