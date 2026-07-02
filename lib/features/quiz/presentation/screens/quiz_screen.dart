@@ -25,6 +25,9 @@ class _QuizScreenState extends State<QuizScreen> {
   bool _isLoading = true;
   List<Map<String, dynamic>> _questions = [];
 
+  // ✅ NEW: Track all user answers
+  Map<int, int> _userSelectedAnswers = {};
+
   @override
   void initState() {
     super.initState();
@@ -33,7 +36,6 @@ class _QuizScreenState extends State<QuizScreen> {
 
   Future<void> _loadQuestions() async {
     try {
-      // Try to load from Firestore first
       final snapshot = await FirebaseFirestore.instance
           .collection('questions')
           .where('level', isEqualTo: widget.level)
@@ -55,7 +57,6 @@ class _QuizScreenState extends State<QuizScreen> {
           _isLoading = false;
         });
       } else {
-        // Fallback to hardcoded questions
         _loadHardcodedQuestions();
       }
     } catch (e) {
@@ -190,10 +191,11 @@ class _QuizScreenState extends State<QuizScreen> {
       'explanation': 'إن وأخواتها تنصب المبتدأ (الاسم) وترفع الخبر',
     },
     {
+      // ✅ FIXED: الأسماء الخمسة تُجر بالياء
       'question': 'الأسماء الخمسة تُجر بـ:',
-      'answers': ['الضمة', 'الألف', 'الكسرة'],
-      'correct': 1,
-      'explanation': 'الأسماء الخمسة تُجر بالألف: "مررت بأبيك"',
+      'answers': ['الواو', 'الألف', 'الياء'],
+      'correct': 2,
+      'explanation': 'الأسماء الخمسة تُجر بالياء: "مررتُ بأبِيكَ"',
     },
     {
       'question': 'المضاف إليه يكون:',
@@ -363,11 +365,13 @@ class _QuizScreenState extends State<QuizScreen> {
     },
   ];
 
+  // ✅ FIXED: Save answer immediately when selected
   void _checkAnswer(int index) {
     if (_answered || _quizFinished) return;
 
     setState(() {
       _selectedAnswer = index;
+      _userSelectedAnswers[_currentQuestion] = index; // 🌟 حفظ الإجابة فوراً
       _answered = true;
       if (index == _questions[_currentQuestion]['correct']) {
         _score += 10;
@@ -387,27 +391,17 @@ class _QuizScreenState extends State<QuizScreen> {
     }
   }
 
+  // ✅ FIXED: Use _userSelectedAnswers to track all answers
   void _finishQuiz() {
     if (_quizFinished) return;
 
     setState(() => _quizFinished = true);
 
-    // Build user answers for all questions
     final userAnswers = _questions.asMap().entries.map((entry) {
       final index = entry.key;
       final q = entry.value;
       final correctIndex = q['correct'] as int;
-
-      // For current question, use _selectedAnswer if answered
-      // For previous questions, they were already answered
-      int? userAns;
-      if (index < _currentQuestion) {
-        // Previous questions - we don't track individual answers
-        // Mark as unanswered for now
-        userAns = null;
-      } else if (index == _currentQuestion) {
-        userAns = _selectedAnswer;
-      }
+      final userAns = _userSelectedAnswers[index]; // 🌟 استدعاء الإجابة الحقيقية المحفوظة
 
       return {
         'question': q['question'],
@@ -509,8 +503,11 @@ class _QuizScreenState extends State<QuizScreen> {
 
     final question = _questions[_currentQuestion];
 
-    return WillPopScope(
-      onWillPop: _onWillPop,
+    return PopScope(
+      canPop: false,
+      onPopInvoked: (didPop) {
+        if (!didPop) _onWillPop();
+      },
       child: Scaffold(
         appBar: AppBar(
           title: Text(
@@ -561,7 +558,7 @@ class _QuizScreenState extends State<QuizScreen> {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFD4AF37).withOpacity(0.2),
+                  color: const Color(0xFFD4AF37).withValues(alpha: 0.2),
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Text(
@@ -581,7 +578,7 @@ class _QuizScreenState extends State<QuizScreen> {
                   color: const Color(0xFF1A1A1A),
                   borderRadius: BorderRadius.circular(16),
                   border: Border.all(
-                    color: const Color(0xFFD4AF37).withOpacity(0.3),
+                    color: const Color(0xFFD4AF37).withValues(alpha: 0.3),
                   ),
                 ),
                 child: Text(
@@ -615,9 +612,9 @@ class _QuizScreenState extends State<QuizScreen> {
                           padding: const EdgeInsets.all(16),
                           decoration: BoxDecoration(
                             color: showCorrect
-                                ? Colors.green.withOpacity(0.3)
+                                ? Colors.green.withValues(alpha: 0.3)
                                 : showWrong
-                                    ? Colors.red.withOpacity(0.3)
+                                    ? Colors.red.withValues(alpha: 0.3)
                                     : const Color(0xFF2A2A2A),
                             borderRadius: BorderRadius.circular(12),
                             border: Border.all(
@@ -687,10 +684,10 @@ class _QuizScreenState extends State<QuizScreen> {
                   padding: const EdgeInsets.all(16),
                   margin: const EdgeInsets.only(bottom: 16),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFD4AF37).withOpacity(0.1),
+                    color: const Color(0xFFD4AF37).withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(
-                      color: const Color(0xFFD4AF37).withOpacity(0.3),
+                      color: const Color(0xFFD4AF37).withValues(alpha: 0.3),
                     ),
                   ),
                   child: Text(
